@@ -1,8 +1,7 @@
 import java.awt.*;
 import java.util.*;
 import javax.swing.*;
-import javax.swing.Timer;
-// Класс узла бинарного дерева
+
 class TreeNode {
     int value;
     TreeNode left;
@@ -22,7 +21,6 @@ class TreeNode {
     }
 }
 
-// Бинарное дерево поиска
 class BinarySearchTree {
     TreeNode root;
     protected int nodeCount;
@@ -174,20 +172,15 @@ class BinarySearchTree {
                 node.right.parent = node;
             }
         } else {
-            // Узел найден
             if (node.left == null && node.right == null) {
-                // Лист
                 return null;
             } else if (node.left == null) {
-                // Только правый потомок
                 node.right.parent = node.parent;
                 return node.right;
             } else if (node.right == null) {
-                // Только левый потомок
                 node.left.parent = node.parent;
                 return node.left;
             } else {
-                // Два потомка
                 TreeNode successor = findMinNode(node.right);
                 node.value = successor.value;
                 node.right = removeRecursive(node.right, successor.value);
@@ -325,7 +318,6 @@ class BinarySearchTree {
     }
 }
 
-// AVL-дерево
 class AVLTreeNode extends TreeNode {
     int height;
 
@@ -403,23 +395,19 @@ class AVLTree extends BinarySearchTree {
         updateHeight(node);
         int balance = getBalanceFactor(node);
 
-        // Left Left Case
         if (balance > 1 && getBalanceFactor(node.left) >= 0) {
             return rotateRight(node);
         }
 
-        // Left Right Case
         if (balance > 1 && getBalanceFactor(node.left) < 0) {
             node.left = rotateLeft(node.left);
             return rotateRight(node);
         }
 
-        // Right Right Case
         if (balance < -1 && getBalanceFactor(node.right) <= 0) {
             return rotateLeft(node);
         }
 
-        // Right Left Case
         if (balance < -1 && getBalanceFactor(node.right) > 0) {
             node.right = rotateRight(node.right);
             return rotateLeft(node);
@@ -522,7 +510,6 @@ class AVLTree extends BinarySearchTree {
     }
 }
 
-// Красно-черное дерево
 class RBTreeNode extends TreeNode {
     enum Color { RED, BLACK }
 
@@ -801,7 +788,6 @@ class RedBlackTree extends BinarySearchTree {
     }
 }
 
-// Класс для отображения графиков с тремя линиями
 class MultiSeriesGraphPanel extends JPanel {
     private final java.util.List<Integer> xValues;
     private final java.util.List<Integer> experimentalY;
@@ -852,7 +838,6 @@ class MultiSeriesGraphPanel extends JPanel {
         int maxX = java.util.Collections.max(xValues);
         int minY = 0;
 
-        // Находим максимальное значение среди всех серий
         int maxExperimentalY = java.util.Collections.max(experimentalY);
         double maxUpperY = 0;
         double maxLowerY = 0;
@@ -872,7 +857,6 @@ class MultiSeriesGraphPanel extends JPanel {
         double xScale = (double) (width - 2 * padding - labelPadding) / (maxX - minX);
         double yScale = (double) (height - 2 * padding - labelPadding) / (maxY - minY);
 
-        // Рисуем сетку
         g2d.setColor(new Color(240, 240, 240));
         Stroke gridStroke = new BasicStroke(1);
         g2d.setStroke(gridStroke);
@@ -902,7 +886,6 @@ class MultiSeriesGraphPanel extends JPanel {
             g2d.drawString(yLabelStr, padding + labelPadding - labelWidth - 10, y + 5);
         }
 
-        // Рисуем оси
         g2d.setColor(Color.BLACK);
         Stroke axisStroke = new BasicStroke(2);
         g2d.setStroke(axisStroke);
@@ -912,7 +895,6 @@ class MultiSeriesGraphPanel extends JPanel {
         g2d.drawLine(padding + labelPadding, height - padding - labelPadding,
                 padding + labelPadding, padding);
 
-        // Стрелки на осях
         drawArrow(g2d, width - padding, height - padding - labelPadding,
                 width - padding - 10, height - padding - labelPadding - 5);
         drawArrow(g2d, width - padding, height - padding - labelPadding,
@@ -922,7 +904,6 @@ class MultiSeriesGraphPanel extends JPanel {
         drawArrow(g2d, padding + labelPadding, padding,
                 padding + labelPadding + 5, padding + 10);
 
-        // Подписи осей
         g2d.setFont(new Font("Arial", Font.BOLD, 14));
         FontMetrics metrics = g2d.getFontMetrics();
         int xLabelWidth = metrics.stringWidth(xLabel);
@@ -933,13 +914,11 @@ class MultiSeriesGraphPanel extends JPanel {
         g2dRotated.drawString(yLabel, -height / 2 - metrics.stringWidth(yLabel) / 2, padding / 2);
         g2dRotated.dispose();
 
-        // Заголовок
         g2d.setFont(new Font("Arial", Font.BOLD, 18));
         metrics = g2d.getFontMetrics();
         int titleWidth = metrics.stringWidth(title);
         g2d.drawString(title, (width - titleWidth) / 2, padding / 2);
 
-        // Рисуем экспериментальные данные (синяя сплошная линия)
         g2d.setColor(Color.BLUE);
         Stroke experimentalStroke = new BasicStroke(2.5f);
         g2d.setStroke(experimentalStroke);
@@ -957,13 +936,11 @@ class MultiSeriesGraphPanel extends JPanel {
             g2d.drawLine(p1.x, p1.y, p2.x, p2.y);
         }
 
-        // Рисуем точки на экспериментальной линии
         g2d.setColor(Color.BLUE);
         for (Point p : experimentalPoints) {
             g2d.fillOval(p.x - 4, p.y - 4, 8, 8);
         }
 
-        // Рисуем верхнюю теоретическую оценку (красная пунктирная линия)
         if (!upperTheoreticalY.isEmpty()) {
             g2d.setColor(Color.RED);
             Stroke upperStroke = new BasicStroke(2.0f, BasicStroke.CAP_BUTT,
@@ -984,7 +961,6 @@ class MultiSeriesGraphPanel extends JPanel {
             }
         }
 
-        // Рисуем нижнюю теоретическую оценку (зеленая пунктирная линия)
         if (!lowerTheoreticalY.isEmpty()) {
             g2d.setColor(Color.GREEN);
             Stroke lowerStroke = new BasicStroke(2.0f, BasicStroke.CAP_BUTT,
@@ -1005,11 +981,9 @@ class MultiSeriesGraphPanel extends JPanel {
             }
         }
 
-        // Легенда
         int legendX = width - 200;
         int legendY = padding;
 
-        // Экспериментальные данные
         g2d.setColor(Color.BLUE);
         g2d.fillRect(legendX, legendY, 20, 20);
         g2d.setColor(Color.BLACK);
@@ -1017,7 +991,6 @@ class MultiSeriesGraphPanel extends JPanel {
         g2d.setFont(new Font("Arial", Font.PLAIN, 12));
         g2d.drawString("Экспериментальная", legendX + 30, legendY + 15);
 
-        // Верхняя оценка
         if (!upperTheoreticalY.isEmpty()) {
             g2d.setColor(Color.RED);
             g2d.fillRect(legendX, legendY + 30, 20, 20);
@@ -1026,7 +999,6 @@ class MultiSeriesGraphPanel extends JPanel {
             g2d.drawString("Верхняя оценка", legendX + 30, legendY + 45);
         }
 
-        // Нижняя оценка
         if (!lowerTheoreticalY.isEmpty()) {
             g2d.setColor(Color.GREEN);
             g2d.fillRect(legendX, legendY + 60, 20, 20);
@@ -1041,7 +1013,6 @@ class MultiSeriesGraphPanel extends JPanel {
     }
 }
 
-// Класс для визуализации дерева
 class TreeVisualizer extends JPanel {
     private TreeNode root;
     private final int nodeRadius = 20;
@@ -1124,7 +1095,6 @@ class TreeVisualizer extends JPanel {
 
         Point currentPos = positions.get(node);
 
-        // Рисуем связи
         if (node.left != null) {
             Point leftPos = positions.get(node.left);
             g2d.setColor(Color.BLACK);
@@ -1139,7 +1109,6 @@ class TreeVisualizer extends JPanel {
             drawTree(g2d, node.right, positions);
         }
 
-        // Рисуем узел
         Color nodeColor = Color.CYAN;
         Color textColor = Color.BLACK;
 
@@ -1164,7 +1133,6 @@ class TreeVisualizer extends JPanel {
         g2d.drawOval(currentPos.x - nodeRadius, currentPos.y - nodeRadius,
                 2 * nodeRadius, 2 * nodeRadius);
 
-        // Рисуем значение
         g2d.setColor(textColor);
         g2d.setFont(new Font("Arial", Font.BOLD, 12));
         String text = node.toString();
@@ -1173,7 +1141,6 @@ class TreeVisualizer extends JPanel {
         int textHeight = fm.getHeight();
         g2d.drawString(text, currentPos.x - textWidth / 2, currentPos.y + textHeight / 4);
 
-        // Для AVL деревьев показываем высоту
         if (node instanceof AVLTreeNode) {
             g2d.setColor(Color.BLACK);
             g2d.setFont(new Font("Arial", Font.PLAIN, 10));
@@ -1183,7 +1150,6 @@ class TreeVisualizer extends JPanel {
     }
 }
 
-// Класс для интерактивного тестирования
 class InteractiveTester extends JFrame {
     private BinarySearchTree currentTree;
     private final JTextArea outputArea;
@@ -1600,7 +1566,7 @@ class InteractiveTester extends JFrame {
         statusLabel.setForeground(color);
 
         if (duration > 0) {
-            Timer timer = new Timer(duration, e -> {
+            javax.swing.Timer timer = new javax.swing.Timer(duration, e -> {
                 statusLabel.setText("Готов");
                 statusLabel.setForeground(Color.BLUE);
             });
@@ -1624,6 +1590,7 @@ public class Main {
         testMonotonicKeys();
         buildAVLGraphs();
         buildRBGraphs();
+        buildBSTGraphs();
     }
 
     private static void testBST() {
@@ -1631,8 +1598,6 @@ public class Main {
         BinarySearchTree bst = new BinarySearchTree();
         Random random = new Random();
 
-        // Тестирование вставки и поиска
-        System.out.println("Тестирование вставки...");
         for (int i = 0; i < 10; i++) {
             int value = random.nextInt(100);
             bst.insertValue(value);
@@ -1648,7 +1613,6 @@ public class Main {
         System.out.println("BST валидно: " + bst.validateBST());
         System.out.println("Количество узлов: " + bst.getNodeCount());
 
-        // Тестирование удаления корня
         if (bst.root != null) {
             int rootValue = bst.root.value;
             System.out.println("Удаляем корень: " + rootValue);
@@ -1666,7 +1630,6 @@ public class Main {
         System.out.println("\n--- Тестирование AVL ---");
         AVLTree avl = new AVLTree();
 
-        // Тестирование балансировки
         System.out.println("Тестирование балансировки AVL...");
         for (int i = 0; i < 20; i++) {
             avl.insertValue(i * 10);
@@ -1675,7 +1638,6 @@ public class Main {
         System.out.println("AVL высота: " + avl.computeHeight(null));
         System.out.println("AVL валидно: " + avl.validateAVL());
 
-        // Тестирование поиска
         System.out.println("Поиск элемента 50: " + (avl.locateNode(50) != null ? "найден" : "не найден"));
         System.out.println("Поиск элемента 999: " + (avl.locateNode(999) != null ? "найден" : "не найден"));
     }
@@ -1716,15 +1678,12 @@ public class Main {
         double log2n = Math.log(n) / Math.log(2);
         int expectedLogHeight = (int) Math.ceil(log2n);
 
-        System.out.println("BST высота (монотонные): " + bst.computeHeight(null) +
-                " (ожидается ~" + n + ")");
         System.out.println("AVL высота (монотонные): " + avl.computeHeight(null) +
                 " (ожидается ~" + expectedLogHeight + ")");
         System.out.println("RB высота (монотонные): " + rb.computeHeight(null) +
                 " (ожидается ~" + (2 * expectedLogHeight) + ")");
     }
 
-    // Окно с графиками для AVL дерева
     private static void buildAVLGraphs() {
         System.out.println("\n=== Построение графиков для AVL дерева ===");
 
@@ -1736,7 +1695,6 @@ public class Main {
             int maxN = 20000;
             int step = 100;
 
-            // Данные для случайных ключей
             java.util.List<Integer> randomX = new java.util.ArrayList<>();
             java.util.List<Integer> randomExperimentalY = new java.util.ArrayList<>();
             java.util.List<Double> randomUpperY = new java.util.ArrayList<>();
@@ -1744,7 +1702,6 @@ public class Main {
 
             AVLTree avlRandom = new AVLTree();
 
-            // Создаем и перемешиваем массив случайных чисел
             java.util.List<Integer> randomKeys = new java.util.ArrayList<>();
             for (int i = 0; i < maxN; i++) {
                 randomKeys.add(i);
@@ -1757,7 +1714,6 @@ public class Main {
                 if (n == 0) {
                     randomExperimentalY.add(0);
                 } else {
-                    // Вставляем следующие step элементов
                     for (int i = n - step; i < n; i++) {
                         avlRandom.insertValue(randomKeys.get(i));
                     }
@@ -1765,7 +1721,6 @@ public class Main {
                     randomExperimentalY.add(height);
                 }
 
-                // Теоретические оценки для AVL
                 double upperBound = 1.44 * (Math.log(n + 2) / Math.log(2)) - 0.328;
                 double lowerBound = Math.log(n + 1) / Math.log(2);
 
@@ -1773,7 +1728,6 @@ public class Main {
                 randomLowerY.add(lowerBound);
             }
 
-            // Данные для монотонных ключей
             java.util.List<Integer> monotonicX = new java.util.ArrayList<>();
             java.util.List<Integer> monotonicExperimentalY = new java.util.ArrayList<>();
             java.util.List<Double> monotonicUpperY = new java.util.ArrayList<>();
@@ -1787,7 +1741,6 @@ public class Main {
                 if (n == 0) {
                     monotonicExperimentalY.add(0);
                 } else {
-                    // Вставляем следующие step элементов
                     for (int i = n - step; i < n; i++) {
                         avlMonotonic.insertValue(i);
                     }
@@ -1795,7 +1748,6 @@ public class Main {
                     monotonicExperimentalY.add(height);
                 }
 
-                // Теоретические оценки для AVL
                 double upperBound = 1.44 * (Math.log(n + 2) / Math.log(2)) - 0.328;
                 double lowerBound = Math.log(n + 1) / Math.log(2);
 
@@ -1803,7 +1755,6 @@ public class Main {
                 monotonicLowerY.add(lowerBound);
             }
 
-            // График для случайных ключей
             MultiSeriesGraphPanel randomPanel = new MultiSeriesGraphPanel(
                     randomX, randomExperimentalY, randomUpperY, randomLowerY,
                     "AVL дерево - случайные ключи (n до " + maxN + ")",
@@ -1811,7 +1762,6 @@ public class Main {
                     "Высота дерева"
             );
 
-            // График для монотонных ключей
             MultiSeriesGraphPanel monotonicPanel = new MultiSeriesGraphPanel(
                     monotonicX, monotonicExperimentalY, monotonicUpperY, monotonicLowerY,
                     "AVL дерево - монотонные ключи (n до " + maxN + ")",
@@ -1830,7 +1780,6 @@ public class Main {
         System.out.println("Графики для AVL дерева построены.");
     }
 
-    // Окно с графиками для красно-черного дерева
     private static void buildRBGraphs() {
         System.out.println("\n=== Построение графиков для красно-черного дерева ===");
 
@@ -1843,7 +1792,6 @@ public class Main {
                 int maxN = 20000;
                 int step = 100;
 
-                // Данные для случайных ключей
                 java.util.List<Integer> randomX = new java.util.ArrayList<>();
                 java.util.List<Integer> randomExperimentalY = new java.util.ArrayList<>();
                 java.util.List<Double> randomUpperY = new java.util.ArrayList<>();
@@ -1851,7 +1799,6 @@ public class Main {
 
                 RedBlackTree rbRandom = new RedBlackTree();
 
-                // Создаем и перемешиваем массив случайных чисел
                 java.util.List<Integer> randomKeys = new java.util.ArrayList<>();
                 for (int i = 0; i < maxN; i++) {
                     randomKeys.add(i);
@@ -1864,7 +1811,6 @@ public class Main {
                     if (n == 0) {
                         randomExperimentalY.add(0);
                     } else {
-                        // Вставляем следующие step элементов
                         for (int i = n - step; i < n; i++) {
                             rbRandom.insertValue(randomKeys.get(i));
                         }
@@ -1872,7 +1818,6 @@ public class Main {
                         randomExperimentalY.add(height);
                     }
 
-                    // Теоретические оценки для RB дерева (как в Python)
                     double lowerBound = (n == 0) ? 0 : Math.log(n + 1) / Math.log(2);
                     double upperBound = (n == 0) ? 0 : 2 * (Math.log(n + 1) / Math.log(2));
 
@@ -1880,7 +1825,6 @@ public class Main {
                     randomLowerY.add(lowerBound);
                 }
 
-                // Данные для монотонных ключи
                 java.util.List<Integer> monotonicX = new java.util.ArrayList<>();
                 java.util.List<Integer> monotonicExperimentalY = new java.util.ArrayList<>();
                 java.util.List<Double> monotonicUpperY = new java.util.ArrayList<>();
@@ -1894,7 +1838,6 @@ public class Main {
                     if (n == 0) {
                         monotonicExperimentalY.add(0);
                     } else {
-                        // Вставляем следующие step элементов
                         for (int i = n - step; i < n; i++) {
                             rbMonotonic.insertValue(i);
                         }
@@ -1902,7 +1845,6 @@ public class Main {
                         monotonicExperimentalY.add(height);
                     }
 
-                    // Теоретические оценки для RB дерева (как в Python)
                     double lowerBound = (n == 0) ? 0 : Math.log(n + 1) / Math.log(2);
                     double upperBound = (n == 0) ? 0 : 2 * (Math.log(n + 1) / Math.log(2));
 
@@ -1910,7 +1852,6 @@ public class Main {
                     monotonicLowerY.add(lowerBound);
                 }
 
-                // График для случайных ключей
                 MultiSeriesGraphPanel randomPanel = new MultiSeriesGraphPanel(
                         randomX, randomExperimentalY, randomUpperY, randomLowerY,
                         "Красно-черное дерево - случайные ключи (n до " + maxN + ")",
@@ -1918,7 +1859,6 @@ public class Main {
                         "Высота дерева"
                 );
 
-                // График для монотонных ключей
                 MultiSeriesGraphPanel monotonicPanel = new MultiSeriesGraphPanel(
                         monotonicX, monotonicExperimentalY, monotonicUpperY, monotonicLowerY,
                         "Красно-черное дерево - монотонные ключи (n до " + maxN + ")",
@@ -1943,6 +1883,70 @@ public class Main {
         });
 
         System.out.println("Графики для красно-черного дерева построены.");
+    }
+
+    private static void buildBSTGraphs() {
+        System.out.println("\n=== Построение графиков для BST (бинарное дерево поиска) ===");
+
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            try {
+                JFrame bstFrame = new JFrame("Графики высоты BST");
+                bstFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                bstFrame.setLayout(new GridLayout(1, 2));
+
+                int maxN = 20000;
+                int step = 100;
+
+                java.util.List<Integer> randomX = new java.util.ArrayList<>();
+                java.util.List<Integer> randomExperimentalY = new java.util.ArrayList<>();
+                java.util.List<Double> randomUpperY = new java.util.ArrayList<>();
+                java.util.List<Double> randomLowerY = new java.util.ArrayList<>();
+
+                BinarySearchTree bstRandom = new BinarySearchTree();
+
+                java.util.List<Integer> randomKeys = new java.util.ArrayList<>();
+                for (int i = 0; i < maxN; i++) {
+                    randomKeys.add(i);
+                }
+                java.util.Collections.shuffle(randomKeys);
+
+                for (int n = 0; n <= maxN; n += step) {
+                    randomX.add(n);
+
+                    if (n == 0) {
+                        randomExperimentalY.add(0);
+                    } else {
+                        for (int i = n - step; i < n; i++) {
+                            bstRandom.insertValue(randomKeys.get(i));
+                        }
+                        int height = bstRandom.computeHeight(null);
+                        randomExperimentalY.add(height);
+                    }
+                }
+
+                MultiSeriesGraphPanel randomPanel = new MultiSeriesGraphPanel(
+                        randomX, randomExperimentalY, randomUpperY, randomLowerY,
+                        "BST - случайные ключи (n до " + maxN + ")",
+                        "Количество элементов (n)",
+                        "Высота дерева"
+                );
+
+                bstFrame.add(randomPanel);
+
+                bstFrame.setSize(1600, 600);
+                bstFrame.setLocationRelativeTo(null);
+                bstFrame.setVisible(true);
+                
+            } catch (Exception e) {
+                System.err.println("Ошибка при создании графика BST: " + e.getMessage());
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null,
+                        "Ошибка при создании графика BST: " + e.getMessage(),
+                        "Ошибка", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        System.out.println("Графики для BST построены.");
         System.out.println("\n=== Тестирование завершено успешно ===");
     }
 }
