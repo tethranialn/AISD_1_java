@@ -543,6 +543,10 @@ class RedBlackTree extends BinarySearchTree {
         return node == null || ((RBTreeNode) node).color == BLACK;
     }
 
+    private RBTreeNode.Color getColor(TreeNode node) {
+        return node == null ? BLACK : ((RBTreeNode) node).color;
+    }
+
     private void setColor(TreeNode node, RBTreeNode.Color color) {
         if (node != null) {
             ((RBTreeNode) node).color = color;
@@ -702,42 +706,153 @@ class RedBlackTree extends BinarySearchTree {
 
     @Override
     public TreeNode removeValue(int value) {
-        TreeNode node = locateNode(value);
-        if (node == null) {
-            return null;
+        TreeNode deletedNode = removeRecursive(root, value);
+        if (deletedNode != null) {
+            nodeCount--;
+            if (root != null) {
+                setColor(root, BLACK);
+            }
         }
-
-        root = removeRecursive(root, value);
-        if (root != null) {
-            setColor(root, BLACK);
-            root.parent = null;
-        }
-        nodeCount--;
-
-        return node;
+        return deletedNode;
     }
 
     private TreeNode removeRecursive(TreeNode node, int value) {
         if (node == null) return null;
 
-        if (value < node.value) {
-            node.left = removeRecursive(node.left, value);
-            if (node.left != null) node.left.parent = node;
-        } else if (value > node.value) {
-            node.right = removeRecursive(node.right, value);
-            if (node.right != null) node.right.parent = node;
-        } else {
-            if (node.left == null || node.right == null) {
-                node = (node.left == null) ? node.right : node.left;
+        TreeNode parent = null;
+        TreeNode current = node;
+        TreeNode deletedNode = null;
+        RBTreeNode.Color deletedColor = BLACK;
+
+        while (current != null) {
+            if (value == current.value) {
+                deletedNode = current;
+                deletedColor = getColor(current);
+
+                if (current.left == null) {
+                    TreeNode child = current.right;
+                    if (parent == null) {
+                        root = child;
+                    } else if (current == parent.left) {
+                        parent.left = child;
+                    } else {
+                        parent.right = child;
+                    }
+
+                    if (child != null) {
+                        child.parent = parent;
+                    }
+
+                    current = child;
+                } else if (current.right == null) {
+                    TreeNode child = current.left;
+                    if (parent == null) {
+                        root = child;
+                    } else if (current == parent.left) {
+                        parent.left = child;
+                    } else {
+                        parent.right = child;
+                    }
+
+                    if (child != null) {
+                        child.parent = parent;
+                    }
+
+                    current = child;
+                } else {
+                    TreeNode successor = findMinNode(current.right);
+                    current.value = successor.value;
+                    value = successor.value;
+                    parent = current;
+                    current = current.right;
+                }
+            } else if (value < current.value) {
+                parent = current;
+                current = current.left;
             } else {
-                TreeNode minNode = findMinNode(node.right);
-                node.value = minNode.value;
-                node.right = removeRecursive(node.right, minNode.value);
-                if (node.right != null) node.right.parent = node;
+                parent = current;
+                current = current.right;
             }
         }
 
-        return node;
+        if (deletedColor == BLACK && root != null) {
+            if (current == null) {
+                // Узел был листом
+                if (parent != null) {
+                    fixDeletion(null, parent);
+                }
+            } else {
+                fixDeletion(current, parent != null ? parent : current.parent);
+            }
+        }
+
+        return deletedNode;
+    }
+
+    private void fixDeletion(TreeNode node, TreeNode parent) {
+        TreeNode current = node;
+
+        while (current != root && isBlack(current)) {
+            if (current == parent.left) {
+                TreeNode sibling = parent.right;
+
+                if (isRed(sibling)) {
+                    setColor(sibling, BLACK);
+                    setColor(parent, RED);
+                    rotateLeft(parent);
+                    sibling = parent.right;
+                }
+
+                if (isBlack(sibling.left) && isBlack(sibling.right)) {
+                    setColor(sibling, RED);
+                    current = parent;
+                    parent = current.parent;
+                } else {
+                    if (isBlack(sibling.right)) {
+                        setColor(sibling.left, BLACK);
+                        setColor(sibling, RED);
+                        rotateRight(sibling);
+                        sibling = parent.right;
+                    }
+
+                    setColor(sibling, getColor(parent));
+                    setColor(parent, BLACK);
+                    setColor(sibling.right, BLACK);
+                    rotateLeft(parent);
+                    current = root;
+                }
+            } else {
+                TreeNode sibling = parent.left;
+
+                if (isRed(sibling)) {
+                    setColor(sibling, BLACK);
+                    setColor(parent, RED);
+                    rotateRight(parent);
+                    sibling = parent.left;
+                }
+
+                if (isBlack(sibling.left) && isBlack(sibling.right)) {
+                    setColor(sibling, RED);
+                    current = parent;
+                    parent = current.parent;
+                } else {
+                    if (isBlack(sibling.left)) {
+                        setColor(sibling.right, BLACK);
+                        setColor(sibling, RED);
+                        rotateLeft(sibling);
+                        sibling = parent.left;
+                    }
+
+                    setColor(sibling, getColor(parent));
+                    setColor(parent, BLACK);
+                    setColor(sibling.left, BLACK);
+                    rotateRight(parent);
+                    current = root;
+                }
+            }
+        }
+
+        setColor(current, BLACK);
     }
 
     private TreeNode findMinNode(TreeNode node) {
@@ -787,7 +902,6 @@ class RedBlackTree extends BinarySearchTree {
         return leftHeight + (isBlack(node) ? 1 : 0);
     }
 }
-
 class MultiSeriesGraphPanel extends JPanel {
     private final java.util.List<Integer> xValues;
     private final java.util.List<Integer> experimentalY;
@@ -1013,575 +1127,8 @@ class MultiSeriesGraphPanel extends JPanel {
     }
 }
 
-class TreeVisualizer extends JPanel {
-    private TreeNode root;
-    private final int nodeRadius = 20;
-    private final int horizontalSpacing = 40;
-    private final int verticalSpacing = 60;
-    private static final int MAX_VISIBLE_NODES = 500;
-
-    public TreeVisualizer(TreeNode root) {
-        this.root = root;
-        setPreferredSize(new Dimension(1200, 800));
-        setBackground(Color.WHITE);
-    }
-
-    public void setRoot(TreeNode root) {
-        this.root = root;
-        repaint();
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON);
-
-        if (root != null) {
-            int nodeCount = countNodes(root);
-            if (nodeCount > MAX_VISIBLE_NODES) {
-                g2d.setFont(new Font("Arial", Font.BOLD, 24));
-                g2d.setColor(Color.RED);
-                String message = "Дерево слишком большое для визуализации (" + nodeCount + " узлов)";
-                g2d.drawString(message, getWidth() / 2 - 200, getHeight() / 2);
-                g2d.setFont(new Font("Arial", Font.PLAIN, 16));
-                g2d.drawString("Максимум " + MAX_VISIBLE_NODES + " узлов для отображения",
-                        getWidth() / 2 - 150, getHeight() / 2 + 30);
-                return;
-            }
-
-            java.util.Map<TreeNode, Point> positions = new java.util.HashMap<>();
-            calculatePositions(root, getWidth() / 2, 50, positions);
-            drawTree(g2d, root, positions);
-        } else {
-            g2d.setFont(new Font("Arial", Font.BOLD, 24));
-            g2d.setColor(Color.RED);
-            g2d.drawString("Дерево пустое", getWidth() / 2 - 80, getHeight() / 2);
-        }
-    }
-
-    private int countNodes(TreeNode node) {
-        if (node == null) return 0;
-        return 1 + countNodes(node.left) + countNodes(node.right);
-    }
-
-    private void calculatePositions(TreeNode node, int x, int y, java.util.Map<TreeNode, Point> positions) {
-        if (node == null) return;
-
-        positions.put(node, new Point(x, y));
-
-        int leftWidth = getSubtreeWidth(node.left);
-        int rightWidth = getSubtreeWidth(node.right);
-
-        if (node.left != null) {
-            calculatePositions(node.left, x - (rightWidth + 1) * horizontalSpacing,
-                    y + verticalSpacing, positions);
-        }
-
-        if (node.right != null) {
-            calculatePositions(node.right, x + (leftWidth + 1) * horizontalSpacing,
-                    y + verticalSpacing, positions);
-        }
-    }
-
-    private int getSubtreeWidth(TreeNode node) {
-        if (node == null) return 0;
-        return 1 + getSubtreeWidth(node.left) + getSubtreeWidth(node.right);
-    }
-
-    private void drawTree(Graphics2D g2d, TreeNode node, java.util.Map<TreeNode, Point> positions) {
-        if (node == null) return;
-
-        Point currentPos = positions.get(node);
-
-        if (node.left != null) {
-            Point leftPos = positions.get(node.left);
-            g2d.setColor(Color.BLACK);
-            g2d.drawLine(currentPos.x, currentPos.y, leftPos.x, leftPos.y);
-            drawTree(g2d, node.left, positions);
-        }
-
-        if (node.right != null) {
-            Point rightPos = positions.get(node.right);
-            g2d.setColor(Color.BLACK);
-            g2d.drawLine(currentPos.x, currentPos.y, rightPos.x, rightPos.y);
-            drawTree(g2d, node.right, positions);
-        }
-
-        Color nodeColor = Color.CYAN;
-        Color textColor = Color.BLACK;
-
-        if (node instanceof AVLTreeNode) {
-            nodeColor = Color.GREEN;
-            textColor = Color.BLACK;
-        } else if (node instanceof RBTreeNode) {
-            RBTreeNode rbNode = (RBTreeNode) node;
-            if (rbNode.color == RBTreeNode.Color.RED) {
-                nodeColor = Color.RED;
-                textColor = Color.BLACK;
-            } else {
-                nodeColor = Color.BLACK;
-                textColor = Color.WHITE;
-            }
-        }
-
-        g2d.setColor(nodeColor);
-        g2d.fillOval(currentPos.x - nodeRadius, currentPos.y - nodeRadius,
-                2 * nodeRadius, 2 * nodeRadius);
-        g2d.setColor(Color.BLACK);
-        g2d.drawOval(currentPos.x - nodeRadius, currentPos.y - nodeRadius,
-                2 * nodeRadius, 2 * nodeRadius);
-
-        g2d.setColor(textColor);
-        g2d.setFont(new Font("Arial", Font.BOLD, 12));
-        String text = node.toString();
-        FontMetrics fm = g2d.getFontMetrics();
-        int textWidth = fm.stringWidth(text);
-        int textHeight = fm.getHeight();
-        g2d.drawString(text, currentPos.x - textWidth / 2, currentPos.y + textHeight / 4);
-
-        if (node instanceof AVLTreeNode) {
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-            String heightText = "h=" + ((AVLTreeNode) node).height;
-            g2d.drawString(heightText, currentPos.x - 15, currentPos.y - nodeRadius - 5);
-        }
-    }
-}
-
-class InteractiveTester extends JFrame {
-    private BinarySearchTree currentTree;
-    private final JTextArea outputArea;
-    private final JTextField inputField;
-    private final Random random;
-    private final TreeVisualizer treeVisualizer;
-    private final JLabel treeTypeLabel;
-    private final JLabel statusLabel;
-    private final JProgressBar progressBar;
-    private int operationCount;
-
-    public InteractiveTester() {
-        setTitle("Расширенный интерактивный тестер деревьев v3.0");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
-
-        currentTree = new BinarySearchTree();
-        random = new Random();
-        operationCount = 0;
-
-        JPanel controlPanel = new JPanel(new GridLayout(2, 5, 5, 5));
-
-        JButton bstButton = new JButton("BST");
-        JButton avlButton = new JButton("AVL");
-        JButton rbButton = new JButton("Красно-черное");
-        JButton insertButton = new JButton("Вставить");
-        JButton deleteButton = new JButton("Удалить");
-        JButton searchButton = new JButton("Найти");
-        JButton randomButton = new JButton("10 случайных");
-        JButton monotonicButton = new JButton("10 монотонных");
-        JButton validateButton = new JButton("Проверить");
-        JButton clearButton = new JButton("Очистить");
-        JButton traverseButton = new JButton("Обходы");
-        JButton random100Button = new JButton("100 случайных");
-        JButton statsButton = new JButton("Статистика");
-        JButton debugButton = new JButton("Отладка");
-
-        controlPanel.add(bstButton);
-        controlPanel.add(avlButton);
-        controlPanel.add(rbButton);
-        controlPanel.add(insertButton);
-        controlPanel.add(deleteButton);
-        controlPanel.add(searchButton);
-        controlPanel.add(randomButton);
-        controlPanel.add(monotonicButton);
-        controlPanel.add(validateButton);
-        controlPanel.add(clearButton);
-        controlPanel.add(random100Button);
-        controlPanel.add(statsButton);
-        controlPanel.add(debugButton);
-
-        JPanel extraPanel = new JPanel(new FlowLayout());
-        extraPanel.add(traverseButton);
-
-        treeTypeLabel = new JLabel("Текущее дерево: BST | Узлов: 0");
-        treeTypeLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        extraPanel.add(treeTypeLabel);
-
-        statusLabel = new JLabel("Готов");
-        statusLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        statusLabel.setForeground(Color.BLUE);
-        extraPanel.add(statusLabel);
-
-        progressBar = new JProgressBar(0, 100);
-        progressBar.setVisible(false);
-        extraPanel.add(progressBar);
-
-        treeVisualizer = new TreeVisualizer(currentTree.root);
-        JScrollPane visualizerScroll = new JScrollPane(treeVisualizer);
-        visualizerScroll.setPreferredSize(new Dimension(800, 400));
-
-        outputArea = new JTextArea(10, 60);
-        outputArea.setEditable(false);
-        outputArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane outputScroll = new JScrollPane(outputArea);
-
-        inputField = new JTextField(20);
-        inputField.addActionListener(e -> {
-            if (!inputField.getText().trim().isEmpty()) {
-                insertButton.doClick();
-            } else {
-                showStatus("Введите значение", Color.RED, 2000);
-            }
-        });
-
-        JPanel inputPanel = new JPanel(new FlowLayout());
-        inputPanel.add(new JLabel("Значение:"));
-        inputPanel.add(inputField);
-
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.add(controlPanel, BorderLayout.NORTH);
-        topPanel.add(extraPanel, BorderLayout.SOUTH);
-
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                visualizerScroll, outputScroll);
-        mainSplit.setDividerLocation(400);
-
-        add(topPanel, BorderLayout.NORTH);
-        add(mainSplit, BorderLayout.CENTER);
-        add(inputPanel, BorderLayout.SOUTH);
-
-        bstButton.addActionListener(e -> {
-            currentTree = new BinarySearchTree();
-            treeVisualizer.setRoot(currentTree.root);
-            updateTreeTypeLabel();
-            outputArea.append("[" + (++operationCount) + "] Переключено на BST дерево\n");
-            showStatus("BST дерево активировано", Color.GREEN, 2000);
-        });
-
-        avlButton.addActionListener(e -> {
-            currentTree = new AVLTree();
-            treeVisualizer.setRoot(currentTree.root);
-            updateTreeTypeLabel();
-            outputArea.append("[" + (++operationCount) + "] Переключено на AVL дерево\n");
-            showStatus("AVL дерево активировано", Color.GREEN, 2000);
-        });
-
-        rbButton.addActionListener(e -> {
-            currentTree = new RedBlackTree();
-            treeVisualizer.setRoot(currentTree.root);
-            updateTreeTypeLabel();
-            outputArea.append("[" + (++operationCount) + "] Переключено на Красно-черное дерево\n");
-            showStatus("Красно-черное дерево активировано", Color.GREEN, 2000);
-        });
-
-        insertButton.addActionListener(e -> {
-            String input = inputField.getText().trim();
-            if (input.isEmpty()) {
-                showStatus("Введите значение для вставки", Color.RED, 2000);
-                return;
-            }
-
-            try {
-                int value = Integer.parseInt(input);
-                TreeNode result = currentTree.insertValue(value, false);
-                if (result != null) {
-                    outputArea.append("[" + (++operationCount) + "] Вставлено: " + value + "\n");
-                    treeVisualizer.setRoot(currentTree.root);
-                    updateTreeDisplay();
-                    showStatus("Элемент " + value + " успешно вставлен", Color.GREEN, 2000);
-                } else {
-                    outputArea.append("[" + (++operationCount) + "] Дубликат: " + value + "\n");
-                    showStatus("Элемент " + value + " уже существует", Color.ORANGE, 2000);
-                }
-            } catch (NumberFormatException ex) {
-                outputArea.append("[" + (++operationCount) + "] Ошибка: '" + input + "' не является числом\n");
-                showStatus("Некорректный ввод. Введите целое число", Color.RED, 3000);
-            }
-        });
-
-        deleteButton.addActionListener(e -> {
-            String input = inputField.getText().trim();
-            if (input.isEmpty()) {
-                showStatus("Введите значение для удаления", Color.RED, 2000);
-                return;
-            }
-
-            try {
-                int value = Integer.parseInt(input);
-                TreeNode result = currentTree.removeValue(value);
-                if (result != null) {
-                    outputArea.append("[" + (++operationCount) + "] Удалено: " + value + "\n");
-                    treeVisualizer.setRoot(currentTree.root);
-                    updateTreeDisplay();
-                    showStatus("Элемент " + value + " успешно удален", Color.GREEN, 2000);
-                } else {
-                    outputArea.append("[" + (++operationCount) + "] Не найдено: " + value + "\n");
-                    showStatus("Элемент " + value + " не найден", Color.ORANGE, 2000);
-                }
-            } catch (NumberFormatException ex) {
-                outputArea.append("[" + (++operationCount) + "] Ошибка: '" + input + "' не является числом\n");
-                showStatus("Некорректный ввод. Введите целое число", Color.RED, 3000);
-            }
-        });
-
-        searchButton.addActionListener(e -> {
-            String input = inputField.getText().trim();
-            if (input.isEmpty()) {
-                showStatus("Введите значение для поиска", Color.RED, 2000);
-                return;
-            }
-
-            try {
-                int value = Integer.parseInt(input);
-                TreeNode result = currentTree.locateNode(value);
-                if (result != null) {
-                    outputArea.append("[" + (++operationCount) + "] Найдено: " + value +
-                            " (родитель: " + (result.parent != null ? result.parent.value : "корень") + ")\n");
-                    showStatus("Элемент " + value + " найден", Color.GREEN, 2000);
-                } else {
-                    outputArea.append("[" + (++operationCount) + "] Не найдено: " + value + "\n");
-                    showStatus("Элемент " + value + " не найден", Color.ORANGE, 2000);
-                }
-            } catch (NumberFormatException ex) {
-                outputArea.append("[" + (++operationCount) + "] Ошибка: '" + input + "' не является числом\n");
-                showStatus("Некорректный ввод. Введите целое число", Color.RED, 3000);
-            }
-        });
-
-        randomButton.addActionListener(e -> {
-            SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
-                @Override
-                protected Void doInBackground() {
-                    progressBar.setVisible(true);
-                    for (int i = 0; i < 10; i++) {
-                        int value = random.nextInt(100);
-                        currentTree.insertValue(value, false);
-                        publish(i + 1);
-                        try {
-                            Thread.sleep(50);
-                        } catch (InterruptedException ex) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                    return null;
-                }
-
-                @Override
-                protected void process(java.util.List<Integer> chunks) {
-                    int last = chunks.get(chunks.size() - 1);
-                    progressBar.setValue(last * 10);
-                    showStatus("Добавлено " + last + " из 10 элементов", Color.BLUE, 0);
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        get();
-                        outputArea.append("[" + (++operationCount) + "] Добавлено 10 случайных чисел\n");
-                        treeVisualizer.setRoot(currentTree.root);
-                        updateTreeDisplay();
-                        showStatus("10 случайных элементов добавлено", Color.GREEN, 2000);
-                    } catch (Exception ex) {
-                        outputArea.append("[" + (++operationCount) + "] Ошибка: " + ex.getMessage() + "\n");
-                        showStatus("Ошибка при добавлении элементов", Color.RED, 3000);
-                    } finally {
-                        progressBar.setVisible(false);
-                    }
-                }
-            };
-            worker.execute();
-        });
-
-        monotonicButton.addActionListener(e -> {
-            SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
-                @Override
-                protected Void doInBackground() {
-                    progressBar.setVisible(true);
-                    int start = random.nextInt(100);
-                    for (int i = 0; i < 10; i++) {
-                        currentTree.insertValue(start + i, false);
-                        publish(i + 1);
-                        try {
-                            Thread.sleep(50);
-                        } catch (InterruptedException ex) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                    return null;
-                }
-
-                @Override
-                protected void process(java.util.List<Integer> chunks) {
-                    int last = chunks.get(chunks.size() - 1);
-                    progressBar.setValue(last * 10);
-                    showStatus("Добавлено " + last + " из 10 элементов", Color.BLUE, 0);
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        get();
-                        outputArea.append("[" + (++operationCount) + "] Добавлено 10 монотонно возрастающих чисел\n");
-                        treeVisualizer.setRoot(currentTree.root);
-                        updateTreeDisplay();
-                        showStatus("10 монотонных элементов добавлено", Color.GREEN, 2000);
-                    } catch (Exception ex) {
-                        outputArea.append("[" + (++operationCount) + "] Ошибка: " + ex.getMessage() + "\n");
-                        showStatus("Ошибка при добавлении элементов", Color.RED, 3000);
-                    } finally {
-                        progressBar.setVisible(false);
-                    }
-                }
-            };
-            worker.execute();
-        });
-
-        random100Button.addActionListener(e -> {
-            SwingWorker<Void, Integer> worker = new SwingWorker<Void, Integer>() {
-                @Override
-                protected Void doInBackground() {
-                    progressBar.setVisible(true);
-                    for (int i = 0; i < 100; i++) {
-                        int value = random.nextInt(1000);
-                        currentTree.insertValue(value, false);
-                        if (i % 10 == 0) {
-                            publish(i + 1);
-                        }
-                    }
-                    return null;
-                }
-
-                @Override
-                protected void process(java.util.List<Integer> chunks) {
-                    int last = chunks.get(chunks.size() - 1);
-                    progressBar.setValue(last);
-                    showStatus("Добавлено " + last + " из 100 элементов", Color.BLUE, 0);
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        get();
-                        outputArea.append("[" + (++operationCount) + "] Добавлено 100 случайных чисел\n");
-                        treeVisualizer.setRoot(currentTree.root);
-                        updateTreeDisplay();
-                        showStatus("100 случайных элементов добавлено", Color.GREEN, 2000);
-                    } catch (Exception ex) {
-                        outputArea.append("[" + (++operationCount) + "] Ошибка: " + ex.getMessage() + "\n");
-                        showStatus("Ошибка при добавлении элементов", Color.RED, 3000);
-                    } finally {
-                        progressBar.setVisible(false);
-                    }
-                }
-            };
-            worker.execute();
-        });
-
-        validateButton.addActionListener(e -> {
-            String validationResult;
-            Color statusColor;
-
-            if (currentTree instanceof AVLTree) {
-                boolean valid = ((AVLTree)currentTree).validateAVL();
-                validationResult = "Проверка AVL: " + (valid ? "OK" : "Ошибка");
-                statusColor = valid ? Color.GREEN : Color.RED;
-            } else if (currentTree instanceof RedBlackTree) {
-                boolean valid = ((RedBlackTree)currentTree).validateRB();
-                validationResult = "Проверка RB: " + (valid ? "OK" : "Ошибка");
-                statusColor = valid ? Color.GREEN : Color.RED;
-            } else {
-                boolean valid = currentTree.validateBST();
-                validationResult = "Проверка BST: " + (valid ? "OK" : "Ошибка");
-                statusColor = valid ? Color.GREEN : Color.RED;
-            }
-
-            outputArea.append("[" + (++operationCount) + "] " + validationResult + "\n");
-            showStatus(validationResult, statusColor, 3000);
-        });
-
-        clearButton.addActionListener(e -> {
-            currentTree.clear();
-            treeVisualizer.setRoot(currentTree.root);
-            outputArea.append("[" + (++operationCount) + "] Дерево очищено\n");
-            updateTreeTypeLabel();
-            showStatus("Дерево очищено", Color.GREEN, 2000);
-        });
-
-        traverseButton.addActionListener(e -> {
-            outputArea.append("[" + (++operationCount) + "] === Обходы дерева ===\n");
-            outputArea.append("Прямой обход: " + currentTree.preOrderTraversal(currentTree.root) + "\n");
-            outputArea.append("Центрированный обход: " + currentTree.inOrderTraversal(currentTree.root) + "\n");
-            outputArea.append("Обратный обход: " + currentTree.postOrderTraversal(currentTree.root) + "\n");
-            outputArea.append("Обход в ширину: " + currentTree.levelOrderTraversal() + "\n");
-            showStatus("Обходы дерева выполнены", Color.GREEN, 2000);
-        });
-
-        statsButton.addActionListener(e -> {
-            outputArea.append("[" + (++operationCount) + "] === Статистика дерева ===\n");
-            outputArea.append("Тип дерева: " + currentTree.getClass().getSimpleName() + "\n");
-            outputArea.append("Количество узлов: " + (currentTree.getNodeCount()) + "\n");
-            outputArea.append("Высота: " + currentTree.computeHeight(null) + "\n");
-            outputArea.append("Минимум: " +
-                    (currentTree.findSmallest() != null ? currentTree.findSmallest().value : "нет") + "\n");
-            outputArea.append("Максимум: " +
-                    (currentTree.findLargest() != null ? currentTree.findLargest().value : "нет") + "\n");
-            outputArea.append("Количество операций: " + operationCount + "\n");
-            showStatus("Статистика выведена", Color.GREEN, 2000);
-        });
-
-        debugButton.addActionListener(e -> {
-            outputArea.append("[" + (++operationCount) + "] === Отладка дерева ===\n");
-            if (currentTree.root != null) {
-                outputArea.append("Корень: " + currentTree.root.value + "\n");
-                outputArea.append("Левый потомок корня: " +
-                        (currentTree.root.left != null ? currentTree.root.left.value : "нет") + "\n");
-                outputArea.append("Правый потомок корня: " +
-                        (currentTree.root.right != null ? currentTree.root.right.value : "нет") + "\n");
-                outputArea.append("Структура дерева:\n" + currentTree.toString() + "\n");
-            } else {
-                outputArea.append("Дерево пустое\n");
-            }
-            showStatus("Отладочная информация выведена", Color.BLUE, 2000);
-        });
-
-        setSize(1200, 800);
-        setLocationRelativeTo(null);
-    }
-
-    private void updateTreeDisplay() {
-        updateTreeTypeLabel();
-    }
-
-    private void updateTreeTypeLabel() {
-        String type = "BST";
-        if (currentTree instanceof AVLTree) type = "AVL";
-        else if (currentTree instanceof RedBlackTree) type = "Красно-черное";
-
-        treeTypeLabel.setText("Текущее дерево: " + type + " | Узлов: " + currentTree.getNodeCount());
-    }
-
-    private void showStatus(String message, Color color, int duration) {
-        statusLabel.setText(message);
-        statusLabel.setForeground(color);
-
-        if (duration > 0) {
-            javax.swing.Timer timer = new javax.swing.Timer(duration, e -> {
-                statusLabel.setText("Готов");
-                statusLabel.setForeground(Color.BLUE);
-            });
-            timer.setRepeats(false);
-            timer.start();
-        }
-    }
-}
-
 public class Main {
     public static void main(String[] args) {
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            InteractiveTester tester = new InteractiveTester();
-            tester.setVisible(true);
-        });
 
         System.out.println("=== Автоматическое тестирование ===");
         testBST();
